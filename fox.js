@@ -161,13 +161,6 @@ async function main() {
 
   const server = new BotServer(bot);
   await server.startServer();
-
-  const TIMEZONE = "Africa/Lusaka";
-  
-  cron.schedule("07 * * * *", () => {
-    log.info(`Hourly task executed at ${moment().tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")}`);
-    process.exit(2);
-  }, { timezone: TIMEZONE });
 }
 
 process.on("unhandledRejection", error => console.error("Unhandled Rejection:", error));
