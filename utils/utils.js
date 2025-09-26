@@ -94,7 +94,7 @@ class Utils {
     try {
       const formData = new FormData();
       formData.append('image', fs.createReadStream(filePath));
-      const response = await axios.post(`https//api.imgbb.com/1/upload?key=${global.client.config.keys.IMGBB}`, formData, {
+      const response = await axios.post(`https://api.imgbb.com/1/upload?key=${global.client.config.keys.IMGBB}`, formData, {
         headers: {
           ...formData.getHeaders()
         }
