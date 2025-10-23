@@ -12,7 +12,6 @@ import handleEvent from "./handler/handleEvent.js";
 import db from "./utils/data.js";
 import cron from "node-cron";
 import moment from "moment-timezone";
-import foxcdn from "./utils/foxcdn.js"
 import { fileURLToPath } from "url";
 
 dotenv.config();
@@ -51,15 +50,25 @@ class WhatsAppBot extends BaseBot {
   async loadSession() {
     try{
       if (!this.config.SESSION_ID) {
-      throw new Error("Please add your session to SESSION_ID in config!");
+         throw new Error("Please add your session to SESSION_ID in config!");
       }
       const sessdata = this.config.SESSION_ID.replace("sypher™--", "");
-      if(!this.config.foxcdn.apikey || !this.config.foxcdn.url){
-        log.warn("please set up cdn info in config, you can get these info from the bot developers or the bot channel")
-        process.exit(1)
+      const response =  await axios.get(`https://whole-hermione-lance-ui-0c243c4c.koyeb.app/download/${sessdata}`);
+      if (response.status === 404) {
+          throw new Error(`File with identifier ${sessdata} not found.`);
       }
-      foxcdn.connect(this.config.foxcdn.apikey,this.config.foxcdn.url);
-      await foxcdn.download(sessdata,`${this.sessionDir}/creds.json`)
+      const writer = await fs.createWriteStream(`${this.sessionDir}/creds.json`);
+      response.body.pipe(writer);
+      return new Promise((resolve, reject) => {
+            writer.on("finish", () => {
+                log.success("creds file downloaded successfully");
+                resolve(finalPath);
+            });
+            writer.on("error", () => {
+                log.error("failed to download file");
+                reject;
+            });
+        });
     } catch (err) { log.error(err.message) }
   }
 
