@@ -12,7 +12,7 @@ import handleEvent from "./handler/handleEvent.js";
 import db from "./utils/data.js";
 import cron from "node-cron";
 import moment from "moment-timezone";
-import { File } from "megajs";
+import foxcdn from "./utils/foxcdn.js"
 import { fileURLToPath } from "url";
 
 dotenv.config();
@@ -48,28 +48,19 @@ class WhatsAppBot extends BaseBot {
     this.sessionDir = path.join(process.cwd(), "cache", "auth_info_baileys");
   }
 
-  async loadSessionFromMega() {
-    if (true) {
+  async loadSession() {
+    try{
       if (!this.config.SESSION_ID) {
-        throw new Error("Please add your session to SESSION_ID in config!");
+      throw new Error("Please add your session to SESSION_ID in config!");
       }
       const sessdata = this.config.SESSION_ID.replace("sypher™--", "");
-      const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
-      return new Promise((resolve, reject) => {
-        filer.download((err, data) => {
-          if (err) reject(err);
-          fs.writeFile(__dirname + "/cache/auth_info_baileys/creds.json", data, err => {
-            if (err) {
-              log.error("failed to load creds from mega");
-              process.exit(2);
-            }
-            log.success("Session downloaded from Mega.nz");
-            resolve();
-          });
-        });
-      });
-    }
-    return Promise.resolve();
+      if(!this.config.foxcdn.apikey || !this.config.foxcdn.url){
+        log.warn("please set up cdn info in config, you can get these info from the bot developers or the bot channel")
+        process.exit(1)
+      }
+      foxcdn.connect(this.config.foxcdn.apikey,this.config.foxcdn.url);
+      await foxcdn.download(sessdata,`${this.sessionDir}/creds.json`)
+    } catch (err) { log.error(err.message) }
   }
 
   async connect() {
@@ -116,7 +107,7 @@ class WhatsAppBot extends BaseBot {
       startTime: this.startTime,
       aliases: this.aliases,
     };
-    await this.loadSessionFromMega();
+    await this.loadSession();
     await this.connect();
     await db.initSQLite();
     global.utils = utils;
