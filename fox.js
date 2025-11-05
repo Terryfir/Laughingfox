@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import P from "pino";
-import { useMultiFileAuthState, fetchLatestBaileysVersion, Browsers, DisconnectReason, makeCacheableSignalKeyStore } from "@whiskeysockets/baileys";
-import pkg from "@whiskeysockets/baileys";
+import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion, Browsers, DisconnectReason, makeCacheableSignalKeyStore } from "baileys";
+import pkg from "baileys";
 import utils from "./utils/utils.js";
 import path, { dirname } from "path";
 import log from "./utils/log.js";
@@ -10,13 +10,10 @@ import express from "express";
 import messageHandler from "./handler/messagehandler.js";
 import handleEvent from "./handler/handleEvent.js";
 import db from "./utils/data.js";
-import cron from "node-cron";
-import moment from "moment-timezone";
 import { fileURLToPath } from "url";
 import axios from "axios";
 
 dotenv.config();
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 class BaseBot {
   constructor() {
@@ -54,7 +51,7 @@ class WhatsAppBot extends BaseBot {
          throw new Error("Please add your session to SESSION_ID in config!");
       }
       const sessdata = this.config.SESSION_ID.replace("sypher™--", "");
-      const response =  await axios.get(`https://existing-madelle-lance-ui-efecfdce.koyeb.app/download/${sessdata}`, { responseType: 'stream' });
+      const response =  await axios.get(`https://existing-madelle-makeWASocket-ui-efecfdce.koyeb.app/download/${sessdata}`, { responseType: 'stream' });
       if (response.status === 404) {
           throw new Error(`File with identifier ${sessdata} not found.`);
       }
@@ -75,9 +72,7 @@ class WhatsAppBot extends BaseBot {
 
   async connect() {
     const { state } = await useMultiFileAuthState(this.sessionDir);
-    const { version } = await fetchLatestBaileysVersion();
-    const { default: lance } = pkg;
-    this.sock = lance({
+    this.sock = makeWASocket({
       auth: {
         creds: state.creds,
         keys: makeCacheableSignalKeyStore(state.keys, P({ level: "fatal" }).child({ level: "fatal" })),

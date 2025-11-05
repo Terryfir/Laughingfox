@@ -3,16 +3,12 @@
   "number": "",
   "admins": [],
   "PREFIX": "-",
-  "SESSION_ID": "sypher™--hash",
+  "SESSION_ID": "sypher™--101df1a6dd26871f7f0254f06188bf2e",
   "PORT": 8080,
   "autoload": true,
   "keys": {
     "pastebin": "R02n6-lNPJqKQCd5VtL4bKPjuK6ARhHb",
     "kaiz": "cc0249f7-d453-48b3-883b-27997eab0af6"
-  },
-  "foxcdn": {
-    "apikey": "49cd3ca887b4634886bc09b479f010a708df8b3fb1f37b1eb5db9a9efb41017f",
-    "url": "https://whole-hermione-lance-ui-0c243c4c.koyeb.app"
   },
   "unloadedCmds": [
     "credits to lance"
