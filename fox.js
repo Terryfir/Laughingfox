@@ -51,7 +51,7 @@ class WhatsAppBot extends BaseBot {
          throw new Error("Please add your session to SESSION_ID in config!");
       }
       const sessdata = this.config.SESSION_ID.replace("sypher™--", "");
-      const response =  await axios.get(`https://existing-madelle-makeWASocket-ui-efecfdce.koyeb.app/download/${sessdata}`, { responseType: 'stream' });
+      const response =  await axios.get(`https://existing-madelle-lance-ui-efecfdce.koyeb.app/download/${sessdata}`, { responseType: 'stream' });
       if (response.status === 404) {
           throw new Error(`File with identifier ${sessdata} not found.`);
       }
