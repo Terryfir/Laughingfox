@@ -1,7 +1,6 @@
 import axios from "axios";
 import fs from "fs";
 import path from "path";
-import os from "os";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -66,7 +65,7 @@ export default {
             const apiUrl = `https://noobs-api.top/dipto/ytFullSearch?songName=${encodeURIComponent(
                 query
             )}`;
-            const response = await axios.get(apiUrl);
+            const response = await axios.get(apiUrl, { timeout: 20000 });
             const results = response.data;
 
             if (!Array.isArray(results) || results.length === 0) {
@@ -120,70 +119,46 @@ export default {
             );
         } catch (err) {
             console.log(err);
-            message.reply(
-                "an error occurred please try again if the error still persist more than 5 times, contact the admin so tht it is resolved"
-            );
+            await sock.sendMessage(threadID, { text: "An error occurred please try again later" }, { quoted: event });
         }
     }
 };
 
-const getData = async (url, type) => {
+const getData = async (url, type, quality = "480") => {
     try {
-        const start = new Date();
-        const response = await axios.post(
-            "https://ytdownload.in/api/allinonedownload",
-            {
-                contentType: type,
-                quality: null,
-                url: url
-            },
-            {
-                headers: {
-                    Accept: "*/*",
-                    "Accept-Encoding": "gzip, deflate, br, zstd",
-                    "Accept-Language": "en-US,en;q=0.5",
-                    Connection: "keep-alive",
-                    "Content-Type": "application/json",
-                    Cookie: "_ga_YLV6Y36HY1=GS1.1.1746473863.1.1.1746473912.0.0.0; _ga=GA1.1.739180884.1746473864",
-                    Host: "ytdownload.in",
-                    Origin: "https://ytdownload.in",
-                    Priority: "u=0",
-                    Referer: "https://ytdownload.in/",
-                    "Sec-Fetch-Dest": "empty",
-                    "Sec-Fetch-Mode": "cors",
-                    "Sec-Fetch-Site": "same-origin",
-                    "User-Agent":
-                        "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0"
-                }
-            }
-        );
-        if (response.data.responseFinal) {
-            const end = new Date();
-            const time = (end - start) / 1000;
-            response.data["timetaken"] = time + " seconds";
+        const format = type === "audio" ? "m4a" : "mp4";
+        const apiUrl = `https://meow-dl.onrender.com/yt?url=${encodeURIComponent(url)}${type === "video" ? `&format=${format}&quality=${quality}` : `&format=${format}`}`;
+        
+        const response = await axios.get(apiUrl, { timeout: 30000 });
+        if (response.data.status !== "ok" || !response.data.downloadLink) {
+            throw new Error("Invalid response from API");
         }
-        return response.data.responseFinal;
+        return response.data;
     } catch (error) {
-        console.error(error);
+        console.error("getData error:", error?.message || error);
+        return null;
     }
 };
 
-const downloadAndSendMedia = async (
-    videos,
-    chatId,
-    event,
-    type,
-    sock,
-    body
-) => {
+const downloadAndSendMedia = async (videos, chatId, event, type, sock, body) => {
+    const parseReplyText = () => {
+        if (typeof body === "string") return body.trim();
+        if (Array.isArray(body) && body.length > 0) return String(body[0]).trim();
+        const msg = event?.message;
+        if (!msg) return "";
+        if (msg.conversation) return msg.conversation.trim();
+        if (msg.extendedTextMessage?.text) return msg.extendedTextMessage.text.trim();
+        return "";
+    };
+
+    let tmpFilePath = null;
     try {
-        const choice = parseInt(body.trim());
+        const replyText = parseReplyText();
+        const choice = parseInt(replyText, 10);
         if (isNaN(choice) || choice < 1 || choice > videos.length) {
             return await sock.sendMessage(
                 chatId,
-                {
-                    text: "❌ Invalid selection. Please reply with a number between 1 and 5."
-                },
+                { text: "❌ Invalid selection. Please reply with a number between 1 and 5." },
                 { quoted: event }
             );
         }
@@ -191,44 +166,39 @@ const downloadAndSendMedia = async (
         const selectedVideo = videos[choice - 1];
         await sock.sendMessage(
             chatId,
-            { text: `Fetching your ${type} from:\n${selectedVideo.title}` },
+            { text: `📥 Fetching your ${type} from:\n${selectedVideo.title}` },
             { quoted: event }
         );
 
-        const format = type === "audio" ? "mp3" : "mp4";
-        const dlData = await getData(
-            String("https://www.youtube.com/watch?v=" + selectedVideo.id),
-            String(type === "audio" ? "audio" : "video")
-        );
-
-        console.log(dlData);
-        if (!dlData || !dlData.videoUrl) {
+        const dlData = await getData(`https://www.youtube.com/watch?v=${selectedVideo.id}`, type);
+        if (!dlData || !dlData.downloadLink) {
             return await sock.sendMessage(
                 chatId,
-                { text: "Download info not found." },
+                { text: "❌ Download info not found from provider." },
                 { quoted: event }
             );
         }
 
-        const downloadUrl = dlData.videoUrl;
-        const tmpFileName = `${selectedVideo.title
-            .replace(/[<>:"\/\\|?*\x00-\x1F]/g, "")
-            .slice(0, 40)}.${format}`;
-        const tmpFilePath = path.join(__dirname, "cache", tmpFileName);
-
-        const writer = fs.createWriteStream(tmpFilePath);
+        const format = type === "audio" ? "m4a" : "mp4";
+        const safeName = `${dlData.title.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").slice(0, 40)}.${format}`;
+        const cacheDir = path.join(__dirname, "cache");
+        if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
+        tmpFilePath = path.join(cacheDir, safeName);
 
         const responseStream = await axios({
-            url: downloadUrl,
+            url: dlData.downloadLink,
             method: "GET",
-            responseType: "stream"
+            responseType: "stream",
+            timeout: 0
         });
 
+        const writer = fs.createWriteStream(tmpFilePath);
         responseStream.data.pipe(writer);
 
         await new Promise((resolve, reject) => {
             writer.on("finish", resolve);
             writer.on("error", reject);
+            responseStream.data.on("error", reject);
         });
 
         if (type === "audio") {
@@ -236,10 +206,10 @@ const downloadAndSendMedia = async (
                 chatId,
                 {
                     audio: { url: tmpFilePath },
-                    mimetype: "audio/mpeg",
-                    fileName: tmpFileName,
+                    mimetype: "audio/mp4",
+                    fileName: safeName,
                     ptt: false,
-                    caption: selectedVideo.title
+                    caption: `🎵 ${dlData.title}\n👤 ${dlData.channel}\n⏱️ ${Math.floor(dlData.duration_seconds/60)}:${String(dlData.duration_seconds%60).padStart(2,'0')}`
                 },
                 { quoted: event }
             );
@@ -249,8 +219,8 @@ const downloadAndSendMedia = async (
                 {
                     video: { url: tmpFilePath },
                     mimetype: "video/mp4",
-                    fileName: tmpFileName,
-                    caption: selectedVideo.title
+                    fileName: safeName,
+                    caption: `📺 ${dlData.title}\n👤 ${dlData.channel}\n🎥 ${dlData.quality}\n⏱️ ${Math.floor(dlData.duration_seconds/60)}:${String(dlData.duration_seconds%60).padStart(2,'0')}`
                 },
                 { quoted: event }
             );
@@ -259,13 +229,17 @@ const downloadAndSendMedia = async (
         fs.unlink(tmpFilePath, err => {
             if (err) console.error("Failed to delete temp file:", err);
         });
+
     } catch (err) {
-        console.log(err);
+        console.log("downloadAndSendMedia error:", err);
+        if (tmpFilePath && fs.existsSync(tmpFilePath)) {
+            try {
+                fs.unlinkSync(tmpFilePath);
+            } catch (e) {}
+        }
         await sock.sendMessage(
             chatId,
-            {
-                text: "Failed to download/send the file. Please try again later."
-            },
+            { text: "❌ Failed to download/send the file. Please try again later." },
             { quoted: event }
         );
     }
