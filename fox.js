@@ -164,6 +164,7 @@ class WhatsAppBot extends BaseBot {
         this.sock.ev.on("creds.update", saveCreds);
         
         this.sock.ev.on("messages.upsert", async ({ messages, type }) => {
+            console.log(messages)
             if (!messages || !Array.isArray(messages)) return;
             if (type === "notify") {
                 for (const event of messages) {

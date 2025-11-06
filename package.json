@@ -14,8 +14,10 @@
     "author": "",
     "license": "ISC",
     "description": "",
+    "repository": "https://github.com/lance-ui/Laughingfox",
     "dependencies": {
         "@whiskeysockets/baileys": "^6.7.17",
+        "adm-zip": "^0.5.16",
         "axios": "^1.9.0",
         "baileys": "^7.0.0-rc.6",
         "canvas": "^3.1.2",
