@@ -11,7 +11,7 @@ export default {
     aliases: ["sticker", "stik"],
     category: "media",
   },
-  onRun: async ({ sock, event }) => {
+  onRun: async ({ sock, event, args }) => {
     const quoted = event.message?.extendedTextMessage?.contextInfo?.quotedMessage;
     const jid = event.key.remoteJid;
 
@@ -52,7 +52,7 @@ export default {
     try {
       const sticker = new Sticker(mediaBuffer, {
         type: StickerTypes.FULL,
-        pack: "sypher",
+        pack: args.join(" ") || "sypher",
         author: "lance",
       });
       const stickerBuffer = await sticker.toBuffer();
