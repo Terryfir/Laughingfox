@@ -24,20 +24,9 @@ export default {
         }
 
         const mentions = participants.map(p => p.id);
-        const m = "🔈 Mentioning everyone:";
-        const mentionText =
-            `${m}\n\n` +
-            mentions.map(u => `@${u.split("@")[0]}`).join(" ");
-
-        const msg = await sock.sendMessage(groupId, {
-            text: mentionText,
+        await sock.sendMessage(groupId, {
+            text: `🏷️${font.bold("tagall utility")}\n${args.join(" ")}`,
             mentions
         });
-        setTimeout(() => {
-            message.edit(
-                `${font.bold("🔗 tagall utility")}\n${args.join(" ")}`,
-                msg
-            );
-        }, 3000);
     }
 };
