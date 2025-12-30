@@ -34,7 +34,6 @@ ${font.bold("Bot Status")}
 • Uptime: ${formatUptime(process.uptime() * 1000)}
 • CPU Cores: ${cpuCores.length}
 • CPU Model: ${cpuModel}
-• CPU Speed: ${cpuSpeedGHz} GHz
 
 ${font.bold("Memory Usage")}
 • Total: ${formatBytes(totalMemory)}
