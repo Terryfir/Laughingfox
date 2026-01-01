@@ -13,7 +13,6 @@ const CORE_PATHS = [
     'scripts',
     'utils',
     'handler',
-    'cache',
     'fox.js',
     'index.js',
     'package.json'
