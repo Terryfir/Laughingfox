@@ -1,10 +1,14 @@
 {
   "private": false,
   "number": "",
-  "admins": ["174264556720272"],
+  "admins": [
+    "174264556720272",
+    "233320575172861",
+    "5833085694004"
+  ],
   "PREFIX": "-",
-  "SESSION_ID": "sypher™--hash",
-  "usenv": false, 
+  "SESSION_ID": "sypher™--49b630759b92bcfcf51e86b93a4a4a24",
+  "usenv": false,
   "PORT": 8080,
   "autoload": true,
   "keys": {
@@ -17,7 +21,11 @@
   ],
   "botname": "sypher",
   "whitelist": {
-    "ids": [],
+    "ids": [
+      "174264556720272",
+      "5833085694004",
+      "233320575172861"
+    ],
     "status": false
   }
 }

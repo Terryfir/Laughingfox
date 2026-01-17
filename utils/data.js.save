@@ -232,7 +232,6 @@ export default {
     isUserBanned,
     setUserBanned,
     setGroupBanned,
-    allSQL,
     runSQL,
     dataCache
 };

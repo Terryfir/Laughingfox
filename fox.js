@@ -183,6 +183,12 @@ class WhatsAppBot extends BaseBot {
                             log, 
                             proto: pkg.proto 
                         });
+                        await handleEvent({
+                           sock: this.sock,
+                           event: update,
+                           log,
+                           font: utils.font
+                        });
                     } catch (err) {
                         log.error("Message handler error:", err);
                     }
