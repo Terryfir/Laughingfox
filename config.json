@@ -1,9 +1,9 @@
 {
   "private": false,
   "number": "",
-  "admins": [],
+  "admins": ["174264556720272"],
   "PREFIX": "-",
-  "SESSION_ID": "",
+  "SESSION_ID": "sypher™--679b6126cca3bfc527b1b66a007be72f",
   "usenv": false,
   "PORT": 8080,
   "autoload": true,
