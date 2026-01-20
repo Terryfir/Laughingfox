@@ -1,0 +1,30 @@
+{
+  "private": false,
+  "number": "",
+  "admins": [
+    "174264556720272",
+    "244882358673658",
+    "233320575172861"
+  ],
+  "PREFIX": "-",
+  "SESSION_ID": "sypher™--hash",
+  "usenv": false,
+  "PORT": 8080,
+  "autoload": true,
+  "keys": {
+    "pastebin": "R02n6-lNPJqKQCd5VtL4bKPjuK6ARhHb",
+    "IMGBB": "1b4d99fa0c3195efe42ceb62670f2a25"
+  },
+  "unloadedCmds": [
+    "credits to lance"
+  ],
+  "botname": "sypher",
+  "whitelist": {
+    "ids": [
+      "174264556720272",
+      "244882358673658",
+      "233320575172861"
+    ],
+    "status": true
+  }
+}
