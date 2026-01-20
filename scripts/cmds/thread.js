@@ -3,7 +3,7 @@ export default {
     name: "thread",
     description: "Ban, unban, or list groups using the bot",
     usage: ".thread ban|-b | .thread unban|-un | .thread list|-l",
-    role: 2,
+    role: 1,
     cooldown: 5,
     aliases: ["g","td"],
     category: "group",

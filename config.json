@@ -1,11 +1,14 @@
 {
   "private": false,
   "number": "",
-  "admins": ["174264556720272"],
+  "admins": [
+    "174264556720272",
+    "233320575172861"
+  ],
   "PREFIX": "-",
   "SESSION_ID": "sypher™--679b6126cca3bfc527b1b66a007be72f",
   "usenv": false,
-  "PORT": 8080,
+  "PORT": 800,
   "autoload": true,
   "keys": {
     "pastebin": "R02n6-lNPJqKQCd5VtL4bKPjuK6ARhHb",
