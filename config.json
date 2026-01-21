@@ -3,11 +3,10 @@
   "number": "",
   "admins": [
     "174264556720272",
-    "244882358673658",
     "233320575172861"
   ],
   "PREFIX": "-",
-  "SESSION_ID": "sypher™--hash",
+  "SESSION_ID": "sypher™--b1314",
   "usenv": false,
   "PORT": 8080,
   "autoload": true,
@@ -25,6 +24,6 @@
       "244882358673658",
       "233320575172861"
     ],
-    "status": true
+    "status": false
   }
 }

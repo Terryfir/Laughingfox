@@ -32,3 +32,5 @@ logs/
 *.tar.bz2
 *.tar.gz        
 cache/
+*.sqlite
+
