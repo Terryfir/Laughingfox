@@ -13,10 +13,9 @@ export default {
         name: "sing",
         cooldown: 10,
         aliase: ["music", "song", "ytmp3"],
-        description:
-            "Download music audio from YouTube with thumbnail support.",
+        description: "Download music audio from YouTube using the new Meow-DL API.",
         category: "media",
-        usage: `${global.client.config.PREFIX}sing <YouTube URL or search query>`
+        usage: `sing <YouTube URL or search query>`
     },
 
     async onRun({ sock, event, args }) {
@@ -24,54 +23,41 @@ export default {
         if (args.length === 0) {
             return await sock.sendMessage(
                 chatId,
-                {
-                    text: "Please provide a YouTube URL or search query.\nUsage: !sing <YouTube URL or search query>"
-                },
+                { text: "Please provide a YouTube URL or search query." },
                 { quoted: event }
             );
         }
 
-        let url = args[0];
+        let query = args.join(" ");
+        let videoUrl = "";
         let thumbnail = "";
-
-        const isUrl = /^https?:\/\/(www\.)?(youtube\.com|youtu\.be)\//.test(
-            url
-        );
+        let title = "";
 
         try {
-            const search = await yts(isUrl ? url : args.join(" "));
+            const search = await yts(query);
             if (!search.videos || search.videos.length === 0) {
-                return await sock.sendMessage(
-                    chatId,
-                    { text: `No results found.` },
-                    { quoted: event }
-                );
+                return await sock.sendMessage(chatId, { text: `No results found.` }, { quoted: event });
             }
-            url = search.videos[0].url;
+
+            videoUrl = search.videos[0].url;
             thumbnail = search.videos[0].thumbnail;
+            title = search.videos[0].title;
 
-            const apiUrl = `https://api.ccprojectsapis-jonell.gleeze.com/api/music?url=${encodeURIComponent(
-                url
-            )}`;
+            const apiUrl = `https://meow-dl.onrender.com/yt?url=${encodeURIComponent(videoUrl)}&quality=480p&format=mp3`;
             const response = await axios.get(apiUrl);
-            const data = response.data.data;
+            
+            const downloadLink = response.data.data?.download || response.data.data?.url || response.data.data?.link;
 
-            if (!data || !data.link) {
-                return await sock.sendMessage(
-                    chatId,
-                    { text: "Failed to retrieve download link." },
-                    { quoted: event }
-                );
+            if (!downloadLink) {
+                return await sock.sendMessage(chatId, { text: "Failed to retrieve download link from the new API." }, { quoted: event });
             }
 
-            const tmpFileName = `${data.title
-                .replace(/[<>:"\/\\|?*\x00-\x1F]/g, "")
-                .slice(0, 40)}.mp3`;
+            const tmpFileName = `${title.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").slice(0, 40)}.mp3`;
             const tmpFilePath = path.join(os.tmpdir(), tmpFileName);
             const writer = fs.createWriteStream(tmpFilePath);
 
             const responseStream = await axios({
-                url: data.link,
+                url: downloadLink,
                 method: "GET",
                 responseType: "stream"
             });
@@ -92,10 +78,10 @@ export default {
                     ptt: false,
                     contextInfo: {
                         externalAdReply: {
-                            title: data.title,
-                            body: "YouTube Music",
+                            title: title,
+                            body: "Downloaded via Sypher bot",
                             thumbnailUrl: thumbnail,
-                            sourceUrl: url,
+                            sourceUrl: videoUrl,
                             mediaType: 1,
                             renderLargerThumbnail: true,
                             showAdAttribution: false
@@ -106,14 +92,10 @@ export default {
             );
 
             fs.unlink(tmpFilePath, err => {
-                if (err) console.error("Failed to delete temp file:", err);
+                if (err) console.error(err);
             });
         } catch (error) {
-            await sock.sendMessage(
-                chatId,
-                { text: `Error: ${error.message}` },
-                { quoted: event }
-            );
+            await sock.sendMessage(chatId, { text: `Error: ${error.message}` }, { quoted: event });
         }
     }
 };
