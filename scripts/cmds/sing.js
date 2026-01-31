@@ -13,7 +13,7 @@ export default {
         name: "sing",
         cooldown: 10,
         aliase: ["music", "song", "ytmp3"],
-        description: "Download music audio from YouTube using the new Meow-DL API.",
+        description: "Download music audio from YouTube using the updated Meow-DL API.",
         category: "media",
         usage: `sing <YouTube URL or search query>`
     },
@@ -43,15 +43,17 @@ export default {
             thumbnail = search.videos[0].thumbnail;
             title = search.videos[0].title;
 
-            const apiUrl = `https://meow-dl.onrender.com/yt?url=${encodeURIComponent(videoUrl)}&quality=480p&format=mp3`;
+            const apiUrl = `https://meow-dl.onrender.com/yt?url=${encodeURIComponent(videoUrl)}`;
             const response = await axios.get(apiUrl);
             
-            const downloadLink = response.data.data?.download || response.data.data?.url || response.data.data?.link;
+            const mediaArray = response.data.media;
+            const audioData = mediaArray.find(m => m.quality === "128kbps") || mediaArray[mediaArray.length - 1];
 
-            if (!downloadLink) {
-                return await sock.sendMessage(chatId, { text: "Failed to retrieve download link from the new API." }, { quoted: event });
+            if (!audioData || !audioData.url) {
+                return await sock.sendMessage(chatId, { text: "Failed to retrieve audio link from the API." }, { quoted: event });
             }
 
+            const downloadLink = audioData.url;
             const tmpFileName = `${title.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").slice(0, 40)}.mp3`;
             const tmpFilePath = path.join(os.tmpdir(), tmpFileName);
             const writer = fs.createWriteStream(tmpFilePath);

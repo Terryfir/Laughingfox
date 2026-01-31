@@ -15,7 +15,7 @@ export default {
         message,
         getUserData,
         saveTable,
-        setUserBanned,
+        setuserBanned,
         args,
         font
     }) {
@@ -40,7 +40,7 @@ export default {
 
             if (target.data.warns >= 3) {
                 target.banned = 1;
-                await setUserBanned(targetID, true);
+                await setuserBanned(targetID, true);
                 target.data.warns = 0;
                 await saveTable("userData", [target]);
 

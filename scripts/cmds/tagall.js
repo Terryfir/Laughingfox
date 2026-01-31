@@ -1,32 +1,22 @@
 export default {
     config: {
         name: "tagall",
-        category: "group"
+        aliases: ["everyone"],
+        description: "Tag everyone in the group.",
+        category: "group",
+        role: 0
     },
-    async onRun({ sock, message, event, args, senderID, font }) {
-        if (!args.join(" "))
-            return message.reply(
-                "please provide a message to share to everyone"
-            );
-        const groupId = event.key.remoteJid;
-        if (!groupId.endsWith("@g.us")) {
-            return await sock.sendMessage(groupId, {
-                text: "🚫 This command can only be used in group chats."
-            });
-        }
-        const metadata = await sock.groupMetadata(groupId);
+    onRun: async function ({ sock, event, font }) {
+        const metadata = await sock.groupMetadata(event.key.remoteJid);
         const participants = metadata.participants;
-        const isAdmin = participants.find(p => p.id === senderID)?.admin;
-        if (!isAdmin) {
-            return await sock.sendMessage(groupId, {
-                text: "🚫 Only group admins can use this command."
-            });
+        let msg = `📣 ${font.bold("Attention Everyone!")}\n\n`;
+        let mentions = [];
+
+        for (let p of participants) {
+            msg += `@${p.id.split('@')[0]} `;
+            mentions.push(p.id);
         }
 
-        const mentions = participants.map(p => p.id);
-        await sock.sendMessage(groupId, {
-            text: `🏷️${font.bold("tagall utility")}\n${args.join(" ")}`,
-            mentions
-        });
+        await sock.sendMessage(event.key.remoteJid, { text: msg, mentions });
     }
 };
