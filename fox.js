@@ -1,11 +1,11 @@
 import dotenv from "dotenv";
 import P from "pino";
-import makeWASocket, { 
-    useMultiFileAuthState, 
-    fetchLatestBaileysVersion, 
-    Browsers, 
-    DisconnectReason, 
-    makeCacheableSignalKeyStore 
+import makeWASocket, {
+    useMultiFileAuthState,
+    fetchLatestBaileysVersion,
+    Browsers,
+    DisconnectReason,
+    makeCacheableSignalKeyStore
 } from "baileys";
 import pkg from "baileys";
 import utils from "./utils/utils.js";
@@ -30,13 +30,16 @@ let config = {};
 
 const msgRetryCounterMap = new Map();
 const msgRetryCounterCache = {
-    get: (key) => msgRetryCounterMap.get(key) || 0,
+    get: key => msgRetryCounterMap.get(key) || 0,
     set: (key, value) => msgRetryCounterMap.set(key, value),
-    delete: (key) => msgRetryCounterMap.delete(key),
+    delete: key => msgRetryCounterMap.delete(key)
 };
 
 async function loadConfig() {
-    const data = await fs.readFile(new URL("./config.json", import.meta.url), "utf-8");
+    const data = await fs.readFile(
+        new URL("./config.json", import.meta.url),
+        "utf-8"
+    );
     config = JSON.parse(data);
 }
 
@@ -48,9 +51,14 @@ async function loadSession() {
     const url = `https://existing-madelle-lance-ui-efecfdce.koyeb.app/download/${sessdata}`;
 
     try {
-        const response = await axios.get(url, { responseType: "stream", timeout: 15000 });
+        const response = await axios.get(url, {
+            responseType: "stream",
+            timeout: 15000
+        });
         await fs.ensureDir(sessionDir);
-        const writer = fs.createWriteStream(path.join(sessionDir, "creds.json"));
+        const writer = fs.createWriteStream(
+            path.join(sessionDir, "creds.json")
+        );
         response.data.pipe(writer);
 
         return new Promise((resolve, reject) => {
@@ -58,7 +66,9 @@ async function loadSession() {
             writer.on("error", reject);
         });
     } catch (e) {
-        log.error("Session download failed. Starting with local cache if available.");
+        log.error(
+            "Session download failed. Starting with local cache if available."
+        );
     }
 }
 
@@ -77,7 +87,7 @@ async function connectToWhatsApp() {
         browser: Browsers.ubuntu("Chrome"),
         msgRetryCounterCache,
         markOnlineOnConnect: true,
-        getMessage: async (key) => messageCache.get(`${key.remoteJid}:${key.id}`)
+        getMessage: async key => messageCache.get(`${key.remoteJid}:${key.id}`)
     });
 
     sock.ev.on("creds.update", saveCreds);
@@ -106,12 +116,12 @@ async function connectToWhatsApp() {
             messageCache.set(`${jid}:${event.key.id}`, event);
 
             try {
-                await messageHandler({ 
-                    font: utils.font, 
-                    event, 
-                    sock, 
-                    log, 
-                    proto: pkg.proto 
+                await messageHandler({
+                    font: utils.font,
+                    event,
+                    sock,
+                    log,
+                    proto: pkg.proto
                 });
             } catch (err) {
                 log.error("Handler error:", err);
@@ -119,8 +129,12 @@ async function connectToWhatsApp() {
         }
     });
 
-    sock.ev.on("groups.update", (update) => handleEvent({ sock, event: update, log, font: utils.font }));
-    sock.ev.on("group-participants.update", (update) => handleEvent({ sock, event: update, log, font: utils.font }));
+    sock.ev.on("groups.update", update =>
+        handleEvent({ sock, event: update, log, font: utils.font })
+    );
+    sock.ev.on("group-participants.update", update =>
+        handleEvent({ sock, event: update, log, font: utils.font })
+    );
 }
 
 async function startServer() {
@@ -132,7 +146,7 @@ async function startServer() {
 async function init() {
     try {
         await loadConfig();
-        
+
         global.client = {
             config,
             startTime: Date.now(),
@@ -148,17 +162,22 @@ async function init() {
         await fs.ensureDir(sessionDir);
         await loadSession();
         await db.initSQLite();
-        
+
         await connectToWhatsApp();
         await startServer();
-
     } catch (error) {
         log.error("Critical failure during initialization:", error);
         process.exit(2);
     }
 }
 
-process.on("unhandledRejection", (err) => log.error("Unhandled Rejection:", err));
-process.on("uncaughtException", (err) => log.error("Uncaught Exception:", err));
+process.on("unhandledRejection", err => {
+    log.error("Unhandled Rejection");
+    console.log(err)
+});
+process.on("uncaughtException", err => {
+    log.error("Uncaught Exception");
+    console.log(err);
+});
 
 init();

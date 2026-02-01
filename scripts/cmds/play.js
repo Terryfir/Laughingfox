@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default {
   config: {
     name: 'play',
-    description: 'Search and download audio from YouTube Music',
+    description: 'Search and download audio from YouTube Music as Document',
     role: 0,
     category: "media",
     author: "lance",
@@ -35,16 +35,14 @@ export default {
 
       const audioInfo = data.media.find(m => m.quality === '128kbps') || data.media[data.media.length - 1];
       const audioUrl = audioInfo.url;
-      const title = data.title;
+      
+      const cleanTitle = data.title.replace(/\s*\(.*?\)\s*/g, '').replace(/\s*\[.*?\]\s*/g, '').trim();
       const channel = data.channel;
+      const thumbnail = data.thumbnail;
+      const youtubeUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
 
-      await sock.sendMessage(threadID, { 
-        image: { url: data.thumbnail }, 
-        caption: `🎵 *Title:* ${title}\n🎤 *Channel:* ${channel}\n\n*Status:* Downloading audio...` 
-      }, { quoted: event });
-
-      const tmpFileName = `${Date.now()}.mp3`;
-      const tmpFilePath = path.join(os.tmpdir(), tmpFileName);
+      const safeFileName = cleanTitle.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").slice(0, 50);
+      const tmpFilePath = path.join(os.tmpdir(), `${safeFileName}.mp3`);
 
       const writer = fs.createWriteStream(tmpFilePath);
       const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
@@ -57,10 +55,20 @@ export default {
       });
 
       await sock.sendMessage(threadID, {
-        audio: { url: tmpFilePath },
+        document: { url: tmpFilePath },
         mimetype: 'audio/mpeg',
-        fileName: `${title}.mp3`,
-        ptt: false
+        fileName: `${safeFileName}.mp3`,
+        contextInfo: {
+          externalAdReply: {
+            title: cleanTitle,
+            body: `Artist: ${channel}`,
+            thumbnailUrl: thumbnail,
+            sourceUrl: youtubeUrl,
+            mediaType: 1,
+            renderLargerThumbnail: true,
+            showAdAttribution: false
+          }
+        }
       }, { quoted: event });
 
       await message.react("✅", event);
