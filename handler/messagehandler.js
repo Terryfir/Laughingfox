@@ -49,16 +49,9 @@ class MessageHandler {
 
             if (!args.startsWith(this.prefix)) return;
 
-            if (
-                (await db.isUserBanned(senderID)) &&
-                !this.admins.includes(cleanSender)
-            )
-                return;
+            if ((await db.isUserBanned(senderID)) && !this.admins.includes(cleanSender)) return;
 
-            if (
-                (await db.isGroupBanned(threadID)) &&
-                !this.admins.includes(cleanSender)
-            ) {
+            if ((await db.isGroupBanned(threadID)) && !this.admins.includes(cleanSender)) {
                 return message.send("❌ | This group is banned");
             }
 
@@ -67,13 +60,12 @@ class MessageHandler {
                 .trim()
                 .split(" ");
 
-            const cmd =
-                global.client.commands.get(commandName.toLowerCase()) ||
-                global.client.aliases.get(commandName.toLowerCase());
+            const cmd = global.client.commands.get(commandName.toLowerCase()) ||
+                        global.client.aliases.get(commandName.toLowerCase());
 
             if (!cmd) {
                 await this.sock.sendMessage(threadID, {
-                    text: `❌ | Command '${commandName}' does not exist. Type ${this.prefix}help to view all commands.`
+                    text: `❌ | Command '${commandName}' does not exist.`
                 });
                 return;
             }
@@ -108,22 +100,11 @@ class MessageHandler {
     async helperFunc({ threadID, senderID, message, args, bot, event }) {
         try {
             const cleanSender = senderID.replace("@lid", "").split(":")[0].split("@")[0];
-
-            if (
-                global.client.config.private &&
-                !this.admins.includes(cleanSender)
-            )
-                return;
-
-            if (
-                (await db.isUserBanned(senderID)) &&
-                !this.admins.includes(cleanSender)
-            )
-                return;
+            if (global.client.config.private && !this.admins.includes(cleanSender)) return;
+            if ((await db.isUserBanned(senderID)) && !this.admins.includes(cleanSender)) return;
 
             await Promise.all([
                 handleDatabase({ threadID, senderID, sock: this.sock, event }),
-
                 handleOnReply({
                     sock: this.sock,
                     event,
@@ -143,7 +124,6 @@ class MessageHandler {
                     setgroupBanned,
                     admins: this.admins
                 }),
-
                 handleOnReaction({
                     sock: this.sock,
                     event,
@@ -153,17 +133,13 @@ class MessageHandler {
                     font: this.font,
                     bot,
                     message,
-                    args,
                     dataCache,
                     saveTable,
                     getTable,
                     getUserData,
                     getGroupData,
-                    setuserBanned,
-                    setgroupBanned,
                     admins: this.admins
                 }),
-
                 handleOnChat({
                     sock: this.sock,
                     event,
@@ -192,117 +168,47 @@ class MessageHandler {
     async handleMessage(event) {
         try {
             const threadID = event.key.remoteJid;
-
-            let senderID =
-                event.key.participant || threadID.split("@")[0] + "@lid";
-            let args = "";
+            const myNumber = this.sock.user.id.split(':')[0].split('@')[0];
+            let senderID = event.key.participant || threadID.split("@")[0] + "@lid";
             const msg = event.message;
             if (!msg) return;
 
-            args =
-                msg.conversation ||
-                msg.extendedTextMessage?.text ||
-                msg.imageMessage?.caption ||
-                msg.videoMessage?.caption ||
-                "";
+            const args = msg.conversation || msg.extendedTextMessage?.text || msg.imageMessage?.caption || msg.videoMessage?.caption || "";
 
-            if (
-                global.client.config.whitelist.status &&
-                !global.client.config.whitelist.ids.includes(
-                    senderID.split("@")[0]
-                )
-            )
-                return;
+            if (global.client.config.whitelist.status && !global.client.config.whitelist.ids.includes(senderID.split("@")[0])) return;
 
             const message = {
                 send: async form => {
-                    return await this.sock.sendMessage(threadID, {
-                        text: form
-                    });
+                    return await this.sock.sendMessage(threadID, { text: form });
                 },
                 reply: async form => {
-                    return await this.sock.sendMessage(
-                        threadID,
-                        { text: form },
-                        { quoted: event }
-                    );
+                    const sent = await this.sock.sendMessage(threadID, { text: form }, { quoted: event });
+                    const existing = global.client.replies.get(sent.key.id) || {};
+                    global.client.replies.set(sent.key.id, { ...existing, owner: myNumber });
+                    return sent;
                 },
                 edit: async (form, data) => {
-                    return await this.sock.sendMessage(threadID, {
-                        text: form,
-                        edit: data.key
-                    });
+                    return await this.sock.sendMessage(threadID, { text: form, edit: data.key });
                 },
                 react: async (emoji, data) => {
-                    return await this.sock.sendMessage(threadID, {
-                        react: { text: emoji, key: data.key }
-                    });
+                    const sent = await this.sock.sendMessage(threadID, { react: { text: emoji, key: data.key } });
+                    const existing = global.client.reactions.get(data.key.id) || {};
+                    global.client.reactions.set(data.key.id, { ...existing, owner: myNumber });
+                    return sent;
                 },
                 unsend: async data => {
                     await this.sock.sendMessage(threadID, { delete: data.key });
-                },
-                sendGif: async (filepath, cap) => {
-                    return await this.sock.sendMessage(threadID, {
-                        video: {
-                            url: filepath,
-                            caption: cap || "",
-                            gifPlayback: true
-                        }
-                    });
-                },
-                sendAudio: async (filepath, cap) => {
-                    return await this.sock.sendMessage(threadID, {
-                        audio: { url: filepath, caption: cap || "" }
-                    });
-                },
-                sendVideo: async (cap, filepath, boo) => {
-                    return await this.sock.sendMessage(threadID, {
-                        image: { url: filepath },
-                        viewOnce: boo || false,
-                        caption: cap || ""
-                    });
-                },
-                sendImage: async (cap, filepath, boo) => {
-                    return await this.sock.sendMessage(threadID, {
-                        image: { url: filepath },
-                        viewOnce: boo || false,
-                        caption: cap || ""
-                    });
                 }
             };
 
             const bot = {
-                changeProfileStatus: form =>
-                    this.sock.updateProfileStatus(form),
-                changeProfileName: form => this.sock.updateProfileName(form),
-                changeProfilePic: filepath =>
-                    this.sock.updateProfilePicture(threadID, { url: filepath }),
-                removeProfilePic: id => this.sock.removeProfilePicture(id),
-                createGroup: (_sock, name, members) =>
-                    this.sock.groupCreate(name, [members]),
-                participants: (id, action) =>
-                    this.sock.groupParticipantsUpdate(threadID, [id], action),
-                leave: id => this.sock.groupLeave(id),
-                user: (id, action) => this.sock.updateBlockStatus(id, action)
+                user: (id, action) => this.sock.updateBlockStatus(id, action),
+                leave: id => this.sock.groupLeave(id)
             };
 
             await Promise.all([
-                this.mainFunc({
-                    senderID,
-                    threadID,
-                    event,
-                    message,
-                    args,
-                    bot
-                }),
-                this.helperFunc({
-                    threadID,
-                    senderID,
-                    message,
-                    args,
-                    bot,
-                    event
-                })
+                this.mainFunc({ senderID, threadID, event, message, args, bot }),
+                this.helperFunc({ threadID, senderID, message, args, bot, event })
             ]);
         } catch (e) {
             console.log(e);
