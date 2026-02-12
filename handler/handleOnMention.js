@@ -18,8 +18,9 @@ export default async ({
     admins
 }) => {
     const { commands } = global.client;
+    const cmdsArray = Array.from(commands.values());
     try {
-        for (const [name, command] of commands.entries()) {
+        for (const command of commands.entries()) {
             if (command && typeof command.onMention === "function") {
                 await command.onMention({
                     sock,
