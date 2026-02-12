@@ -1,9 +1,11 @@
-import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+import { downloadContentFromMessage } from "@whiskeysockets/baileys";
 
 export default {
     config: {
-        name: 'broadcast',
-        description: 'Broadcast media or text with a silent tagall to all groups',
+        name: "broadcast",
+        aliase: ["bc"],
+        description:
+            "Broadcast through all child accounts (Skips Main account)",
         role: 1,
         category: "admin",
         author: "lance",
@@ -12,20 +14,44 @@ export default {
 
     async onRun({ sock, event, threadID, message, getTable, args, font }) {
         const content = args.join(" ");
-        const quoted = event.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-        
+        const quoted =
+            event.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+
         try {
             const allGroups = await getTable("groupData");
-            if (!allGroups || allGroups.length === 0) return message.reply("No groups in database.");
+            if (!allGroups || allGroups.length === 0)
+                return message.reply("No groups in database.");
+
+            // Filter for child accounts only
+            const childSockets = [];
+            if (global.client.activeSockets) {
+                for (let [num, s] of global.client.activeSockets) {
+                    if (num !== global.client.mainNumber) {
+                        childSockets.push({ num, s });
+                    }
+                }
+            }
+
+            if (childSockets.length === 0) {
+                return message.reply(
+                    "❌ No child accounts found. Broadcast canceled to protect the Main account."
+                );
+            }
 
             let mediaData = null;
             let mediaType = null;
-            let msgOptions = {};
 
             if (quoted) {
                 const type = Object.keys(quoted)[0];
-                if (['imageMessage', 'videoMessage', 'audioMessage'].includes(type)) {
-                    const stream = await downloadContentFromMessage(quoted[type], type.replace('Message', ''));
+                if (
+                    ["imageMessage", "videoMessage", "audioMessage"].includes(
+                        type
+                    )
+                ) {
+                    const stream = await downloadContentFromMessage(
+                        quoted[type],
+                        type.replace("Message", "")
+                    );
                     let buffer = Buffer.from([]);
                     for await (const chunk of stream) {
                         buffer = Buffer.concat([buffer, chunk]);
@@ -35,38 +61,71 @@ export default {
                 }
             }
 
-            const baseText = `📢 ${font.bold("SYSTEM BROADCAST")}\n━━━━━━━━━━━━━━━━━━\n\n${content || ""}\n\n━━━━━━━━━━━━━━━━━━`;
+            const baseText = `📢 ${font.bold(
+                "CHILD BROADCAST"
+            )}\n━━━━━━━━━━━━━━━━━━\n\n${content || ""}\n\n━━━━━━━━━━━━━━━━━━`;
+            await message.reply(
+                `🚀 Broadcasting via ${childSockets.length} child accounts...`
+            );
 
             let successCount = 0;
-            let failCount = 0;
-
             for (const group of allGroups) {
+                
+                const worker =
+                    childSockets[successCount % childSockets.length].s;
+
                 try {
-                    const metadata = await sock.groupMetadata(group.id);
+                    const metadata = await worker.groupMetadata(group.id);
                     const mentions = metadata.participants.map(p => p.id);
 
-                    if (mediaType === 'imageMessage') {
-                        await sock.sendMessage(group.id, { image: mediaData, caption: baseText, mentions });
-                    } else if (mediaType === 'videoMessage') {
-                        await sock.sendMessage(group.id, { video: mediaData, caption: baseText, mentions });
-                    } else if (mediaType === 'audioMessage') {
-                        await sock.sendMessage(group.id, { audio: mediaData, mimetype: 'audio/mp4', ptt: true, mentions });
+                    const sendOptions = { mentions };
+                    if (mediaType === "imageMessage") {
+                        await worker.sendMessage(group.id, {
+                            image: mediaData,
+                            caption: baseText,
+                            ...sendOptions
+                        });
+                    } else if (mediaType === "videoMessage") {
+                        await worker.sendMessage(group.id, {
+                            video: mediaData,
+                            caption: baseText,
+                            ...sendOptions
+                        });
+                    } else if (mediaType === "audioMessage") {
+                        await worker.sendMessage(group.id, {
+                            audio: mediaData,
+                            mimetype: "audio/mp4",
+                            ptt: true,
+                            ...sendOptions
+                        });
                     } else {
-                        await sock.sendMessage(group.id, { text: baseText, mentions });
+                        await worker.sendMessage(group.id, {
+                            text: baseText,
+                            ...sendOptions
+                        });
                     }
                     successCount++;
                 } catch (err) {
-                    failCount++;
+                    // Skip failed groups
                 }
             }
 
             await message.react("✅", event);
-            await sock.sendMessage(threadID, { 
-                text: `✅ ${font.bold("Broadcast Complete")}\n\nSent to: ${successCount} groups\nFailed: ${failCount}` 
-            }, { quoted: event });
-
+            await sock.sendMessage(
+                threadID,
+                {
+                    text: `✅ ${font.bold(
+                        "Broadcast Complete"
+                    )}\n\nSent to: ${successCount} groups\nAccounts Used: ${
+                        childSockets.length
+                    } (Child only)`
+                },
+                { quoted: event }
+            );
         } catch (error) {
-            await sock.sendMessage(threadID, { text: `Error: ${error.message}` });
+            await sock.sendMessage(threadID, {
+                text: `Error: ${error.message}`
+            });
         }
     }
 };
