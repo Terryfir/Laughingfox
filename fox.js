@@ -5,7 +5,8 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     Browsers,
     DisconnectReason,
-    makeCacheableSignalKeyStore
+    makeCacheableSignalKeyStore,
+    delay
 } from "baileys";
 import pkg from "baileys";
 import utils from "./utils/utils.js";
@@ -22,10 +23,11 @@ import NodeCache from "node-cache";
 dotenv.config();
 
 const logger = P({ level: "silent" });
-const sessionDir = path.join(process.cwd(), "cache", "auth_info_baileys");
-const messageCache = new NodeCache({ stdTTL: 300, useClones: false });
+const activeSockets = new Map(); 
+const MAIN_SESSION_DIR = path.join(process.cwd(), "cache", "auth_info_baileys");
+const EXTRA_SESSIONS_DIR = path.join(process.cwd(), "cache", "sessions");
+const SETTINGS_PATH = path.join(process.cwd(), "cache", "accountSettings.json");
 
-let sock = null;
 let config = {};
 
 const msgRetryCounterMap = new Map();
@@ -55,9 +57,9 @@ async function loadSession() {
             responseType: "stream",
             timeout: 15000
         });
-        await fs.ensureDir(sessionDir);
+        await fs.ensureDir(MAIN_SESSION_DIR);
         const writer = fs.createWriteStream(
-            path.join(sessionDir, "creds.json")
+            path.join(MAIN_SESSION_DIR, "creds.json")
         );
         response.data.pipe(writer);
 
@@ -66,17 +68,16 @@ async function loadSession() {
             writer.on("error", reject);
         });
     } catch (e) {
-        log.error(
-            "Session download failed. Starting with local cache if available."
-        );
+        log.error("Session download failed. Starting with local cache if available.");
     }
 }
 
-async function connectToWhatsApp() {
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+async function startSession(sessionPath, isMain = false, number = "Main") {
+    const messageCache = new NodeCache({ stdTTL: 300, useClones: false });
+    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
     const { version } = await fetchLatestBaileysVersion();
 
-    sock = makeWASocket({
+    const sock = makeWASocket({
         logger,
         version,
         auth: {
@@ -96,19 +97,28 @@ async function connectToWhatsApp() {
         if (connection === "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason === DisconnectReason.loggedOut) {
-                log.error("Session logged out. Delete cache and restart.");
-                process.exit(1);
+                log.error(`Session [${number}] logged out.`);
+                activeSockets.delete(number);
+                if (!isMain) await fs.remove(sessionPath);
             } else {
-                log.info("Connection closed. Triggering manager restart...");
-                process.exit(2);
+                log.info(`Connection closed for [${number}]. Reconnecting...`);
+                await delay(3000);
+                startSession(sessionPath, isMain, number);
             }
         } else if (connection === "open") {
-            log.success("Bot connected successfully!");
+            const myNum = sock.user.id.split(':')[0].split('@')[0];
+            activeSockets.set(myNum, sock);
+            if (isMain) global.client.mainNumber = myNum;
+            log.success(`Bot connected successfully! (${myNum})`);
         }
     });
 
     sock.ev.on("messages.upsert", async ({ messages, type }) => {
         if (type !== "notify") return;
+        
+        const myNumber = sock.user.id.split(':')[0].split('@')[0];
+        if (global.client.pausedAccounts.has(myNumber)) return;
+
         for (const event of messages) {
             const jid = event.key.remoteJid;
             if (!jid || jid === "status@broadcast") continue;
@@ -135,11 +145,34 @@ async function connectToWhatsApp() {
     sock.ev.on("group-participants.update", update =>
         handleEvent({ sock, event: update, log, font: utils.font })
     );
+
+    return sock;
 }
 
 async function startServer() {
     const app = express();
-    app.get("/", (req, res) => res.json({ status: "running" }));
+    app.use(express.json());
+
+    app.get("/", (req, res) => res.json({ status: "running", active: activeSockets.size }));
+
+    app.get("/pair", async (req, res) => {
+        const number = req.query.number?.replace(/[^0-9]/g, '');
+        if (!number) return res.status(400).json({ error: "Number required" });
+        
+        const sessionPath = path.join(EXTRA_SESSIONS_DIR, `auth_${number}`);
+        await fs.ensureDir(sessionPath);
+        
+        const sock = await startSession(sessionPath, false, number);
+        
+        try {
+            await delay(5000);
+            const code = await sock.requestPairingCode(number);
+            res.json({ code });
+        } catch (e) {
+            res.status(500).json({ error: "Pairing failed" });
+        }
+    });
+
     app.listen(config.PORT || 8000);
 }
 
@@ -155,15 +188,32 @@ async function init() {
             events: new Map(),
             cooldowns: new Map(),
             reactions: new Map(),
-            replies: new Map()
+            replies: new Map(),
+            pausedAccounts: new Set(),
+            accountSettings: {},
+            mainNumber: null
         };
         global.utils = utils;
 
-        await fs.ensureDir(sessionDir);
-        await loadSession();
-        await db.initSQLite();
+        if (fs.existsSync(SETTINGS_PATH)) {
+            global.client.accountSettings = fs.readJSONSync(SETTINGS_PATH);
+        }
 
-        await connectToWhatsApp();
+        await db.initSQLite();
+        await fs.ensureDir(MAIN_SESSION_DIR);
+        await fs.ensureDir(EXTRA_SESSIONS_DIR);
+
+        await loadSession();
+        await startSession(MAIN_SESSION_DIR, true, "Main");
+
+        const extraFolders = await fs.readdir(EXTRA_SESSIONS_DIR);
+        for (const folder of extraFolders) {
+            if (folder.startsWith("auth_")) {
+                const num = folder.replace("auth_", "");
+                startSession(path.join(EXTRA_SESSIONS_DIR, folder), false, num);
+            }
+        }
+
         await startServer();
     } catch (error) {
         log.error("Critical failure during initialization:", error);
@@ -173,7 +223,7 @@ async function init() {
 
 process.on("unhandledRejection", err => {
     log.error("Unhandled Rejection");
-    console.log(err)
+    console.log(err);
 });
 process.on("uncaughtException", err => {
     log.error("Uncaught Exception");
