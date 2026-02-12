@@ -203,9 +203,9 @@ class MessageHandler {
                 owner: myNumber
             });
 
-            const existing = global.client.reactions.get(event.key.id) || {};
+            const ex = global.client.reactions.get(event.key.id) || {};
             global.client.reactions.set(event.key.id, {
-                ...existing,
+                ...ex,
                 owner: myNumber
             });
 
