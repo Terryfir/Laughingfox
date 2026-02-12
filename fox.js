@@ -94,7 +94,7 @@ async function startSession(sessionPath, isMain = false, number = "Main") {
     });
 
     sock.ev.on("creds.update", saveCreds);
-
+    
     sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
         if (connection === "close") {
             const reason = lastDisconnect?.error?.output?.statusCode;
@@ -110,6 +110,7 @@ async function startSession(sessionPath, isMain = false, number = "Main") {
         } else if (connection === "open") {
             const myNum = sock.user.id.split(":")[0].split("@")[0];
             activeSockets.set(myNum, sock);
+            global.client.activeSockets.set(myNum, sock);
             if (isMain) global.client.mainNumber = myNum;
             log.success(`Bot connected successfully! (${myNum})`);
         }
