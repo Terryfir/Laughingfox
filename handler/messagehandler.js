@@ -2,6 +2,7 @@ import commandHander from "./commandHandler.js";
 import handleOnReaction from "./handleOnReaction.js";
 import handleOnReply from "./handleOnReply.js";
 import handleOnChat from "./handleonChat.js";
+import handleOnMention from "./handleOnMention.js";
 
 import {
     handleDatabase,
@@ -110,7 +111,15 @@ class MessageHandler {
         }
     }
 
-    async helperFunc({ threadID, senderID, message, args, bot, event }) {
+    async helperFunc({
+        threadID,
+        senderID,
+        message,
+        args,
+        bot,
+        event,
+        isMentioned
+    }) {
         try {
             const cleanSender = senderID
                 .replace("@lid", "")
@@ -127,7 +136,7 @@ class MessageHandler {
             )
                 return;
 
-            await Promise.all([
+            const tasks = [
                 handleDatabase({ threadID, senderID, sock: this.sock, event }),
                 handleOnReply({
                     sock: this.sock,
@@ -183,7 +192,33 @@ class MessageHandler {
                     setgroupBanned,
                     admins: this.admins
                 })
-            ]);
+            ];
+
+            if (isMentioned) {
+                tasks.push(
+                    handleOnMention({
+                        sock: this.sock,
+                        event,
+                        threadID,
+                        senderID,
+                        proto: this.proto,
+                        font: this.font,
+                        bot,
+                        message,
+                        args,
+                        dataCache,
+                        saveTable,
+                        getTable,
+                        getUserData,
+                        getGroupData,
+                        setuserBanned,
+                        setgroupBanned,
+                        admins: this.admins
+                    })
+                );
+            }
+
+            await Promise.all(tasks);
         } catch (error) {
             console.log(error);
         }
@@ -192,11 +227,14 @@ class MessageHandler {
     async handleMessage(event) {
         try {
             const threadID = event.key.remoteJid;
-            const myNumber = this.sock.user.id.split(":")[0].split("@")[0];
+            const myId = this.sock.user.id.split(":")[0] + "@s.whatsapp.net";
+            const myNumber = this.sock.user.id.split(":")[0];
+
             let senderID =
                 event.key.participant || threadID.split("@")[0] + "@lid";
             const msg = event.message;
             if (!msg) return;
+
             const existing = global.client.replies.get(event.key.id) || {};
             global.client.replies.set(event.key.id, {
                 ...existing,
@@ -208,6 +246,10 @@ class MessageHandler {
                 ...ex,
                 owner: myNumber
             });
+
+            const mentions =
+                msg.extendedTextMessage?.contextInfo?.mentionedJid || [];
+            const isMentioned = mentions.includes(myId);
 
             const args =
                 msg.conversation ||
@@ -225,34 +267,25 @@ class MessageHandler {
                 return;
 
             const message = {
-                send: async form => {
-                    return await this.sock.sendMessage(threadID, {
-                        text: form
-                    });
-                },
-                reply: async form => {
-                    const sent = await this.sock.sendMessage(
+                send: async form =>
+                    await this.sock.sendMessage(threadID, { text: form }),
+                reply: async form =>
+                    await this.sock.sendMessage(
                         threadID,
                         { text: form },
                         { quoted: event }
-                    );
-                    return sent;
-                },
-                edit: async (form, data) => {
-                    return await this.sock.sendMessage(threadID, {
+                    ),
+                edit: async (form, data) =>
+                    await this.sock.sendMessage(threadID, {
                         text: form,
                         edit: data.key
-                    });
-                },
-                react: async (emoji, data) => {
-                    const sent = await this.sock.sendMessage(threadID, {
+                    }),
+                react: async (emoji, data) =>
+                    await this.sock.sendMessage(threadID, {
                         react: { text: emoji, key: data.key }
-                    });
-                    return sent;
-                },
-                unsend: async data => {
-                    await this.sock.sendMessage(threadID, { delete: data.key });
-                }
+                    }),
+                unsend: async data =>
+                    await this.sock.sendMessage(threadID, { delete: data.key })
             };
 
             const bot = {
@@ -275,7 +308,8 @@ class MessageHandler {
                     message,
                     args,
                     bot,
-                    event
+                    event,
+                    isMentioned
                 })
             ]);
         } catch (e) {
