@@ -1,21 +1,3 @@
-function getStanzaId(message) {
-    if (
-        message.extendedTextMessage &&
-        message.extendedTextMessage.contextInfo
-    ) {
-        return message.extendedTextMessage.contextInfo.stanzaId;
-    } else if (message.imageMessage && message.imageMessage.contextInfo) {
-        return message.imageMessage.contextInfo.stanzaId;
-    } else if (message.stickerMessage && message.stickerMessage.contextInfo) {
-        return message.stickerMessage.contextInfo.stanzaId;
-    } else if (message.videoMessage && message.videoMessage.contextInfo) {
-        return message.videoMessage.contextInfo.stanzaId;
-    } else if (message.contextInfo) {
-        return message.contextInfo.stanzaId;
-    }
-    return null;
-}
-
 export default async ({
     sock,
     event,
@@ -24,30 +6,39 @@ export default async ({
     proto,
     font,
     message,
-    bot,
     args,
+    bot,
     dataCache,
     saveTable,
     getTable,
     getUserData,
-    getGroupData
+    getGroupData,
+    setuserBanned,
+    setgroupBanned
 }) => {
     const { replies, commands } = global.client;
     try {
-        const stanzaId = getStanzaId(event.message);
+        const replyMsg = event.message?.extendedTextMessage?.contextInfo;
+        const stanzaId = replyMsg?.stanzaId;
+
         if (stanzaId && replies.has(stanzaId)) {
             const data = replies.get(stanzaId);
+            const myNumber = sock.user.id.split(':')[0].split('@')[0];
+
+            if (data.owner && data.owner !== myNumber) return;
+
             if (data && data.commandName) {
-                const command = commands.get(data.commandName);
+                const command = commands.get(data.commandName.toLowerCase());
                 if (command && command.onReply) {
                     await command.onReply({
                         sock,
+                        event,
                         threadID,
                         senderID,
                         proto,
                         font,
-                        message,
                         bot,
+                        message,
                         args,
                         data,
                         dataCache,
@@ -55,15 +46,13 @@ export default async ({
                         getTable,
                         getUserData,
                         getGroupData,
-                        event
+                        setuserBanned,
+                        setgroupBanned
                     });
                 }
             }
         }
     } catch (err) {
-        console.log(err);
-        message.reply(
-            "Failed to handle onReply. Please contact admin so that this is fixed immediately."
-        );
+        console.error(err);
     }
 };
