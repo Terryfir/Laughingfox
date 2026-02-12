@@ -23,7 +23,7 @@ import NodeCache from "node-cache";
 dotenv.config();
 
 const logger = P({ level: "silent" });
-const activeSockets = new Map(); 
+const activeSockets = new Map();
 const MAIN_SESSION_DIR = path.join(process.cwd(), "cache", "auth_info_baileys");
 const EXTRA_SESSIONS_DIR = path.join(process.cwd(), "cache", "sessions");
 const SETTINGS_PATH = path.join(process.cwd(), "cache", "accountSettings.json");
@@ -68,7 +68,9 @@ async function loadSession() {
             writer.on("error", reject);
         });
     } catch (e) {
-        log.error("Session download failed. Starting with local cache if available.");
+        log.error(
+            "Session download failed. Starting with local cache if available."
+        );
     }
 }
 
@@ -106,7 +108,7 @@ async function startSession(sessionPath, isMain = false, number = "Main") {
                 startSession(sessionPath, isMain, number);
             }
         } else if (connection === "open") {
-            const myNum = sock.user.id.split(':')[0].split('@')[0];
+            const myNum = sock.user.id.split(":")[0].split("@")[0];
             activeSockets.set(myNum, sock);
             if (isMain) global.client.mainNumber = myNum;
             log.success(`Bot connected successfully! (${myNum})`);
@@ -115,8 +117,8 @@ async function startSession(sessionPath, isMain = false, number = "Main") {
 
     sock.ev.on("messages.upsert", async ({ messages, type }) => {
         if (type !== "notify") return;
-        
-        const myNumber = sock.user.id.split(':')[0].split('@')[0];
+
+        const myNumber = sock.user.id.split(":")[0].split("@")[0];
         if (global.client.pausedAccounts.has(myNumber)) return;
 
         for (const event of messages) {
@@ -153,17 +155,19 @@ async function startServer() {
     const app = express();
     app.use(express.json());
 
-    app.get("/", (req, res) => res.json({ status: "running", active: activeSockets.size }));
+    app.get("/", (req, res) =>
+        res.json({ status: "running", active: activeSockets.size })
+    );
 
     app.get("/pair", async (req, res) => {
-        const number = req.query.number?.replace(/[^0-9]/g, '');
+        const number = req.query.number?.replace(/[^0-9]/g, "");
         if (!number) return res.status(400).json({ error: "Number required" });
-        
+
         const sessionPath = path.join(EXTRA_SESSIONS_DIR, `auth_${number}`);
         await fs.ensureDir(sessionPath);
-        
+
         const sock = await startSession(sessionPath, false, number);
-        
+
         try {
             await delay(5000);
             const code = await sock.requestPairingCode(number);
