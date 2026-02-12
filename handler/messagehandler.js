@@ -23,36 +23,41 @@ class MessageHandler {
         this.sock = sock;
         this.log = log;
         this.proto = proto;
-        this.prefix = global.client.config.PREFIX;
+        
+        const myNumber = this.sock.user.id.split(':')[0].split('@')[0];
+        const accountSettings = global.client.accountSettings?.[myNumber] || {};
+        
+        this.prefix = accountSettings.prefix || global.client.config.PREFIX;
+        
+        const isMainAccount = (myNumber === global.client.mainNumber);
+        this.admins = isMainAccount 
+            ? global.client.config.admins 
+            : (accountSettings.admins || []);
     }
 
     async mainFunc({ senderID, threadID, event, message, args, bot }) {
         try {
+            const cleanSender = senderID.replace("@lid", "").split(":")[0].split("@")[0];
+
             if (
                 global.client.config.private &&
-                !global.client.config.admins.includes(
-                    senderID.replace("@lid", "")
-                ) &&
+                !this.admins.includes(cleanSender) &&
                 args.startsWith(this.prefix)
             ) {
-                return message.send(`❌ | Only bot admins can use the bot`);
+                return message.send(`❌ | Only admins of this account can use the bot`);
             }
 
             if (!args.startsWith(this.prefix)) return;
 
             if (
                 (await db.isUserBanned(senderID)) &&
-                !global.client.config.admins.includes(
-                    senderID.replace("@lid", "")
-                )
+                !this.admins.includes(cleanSender)
             )
                 return;
 
             if (
                 (await db.isGroupBanned(threadID)) &&
-                !global.client.config.admins.includes(
-                    senderID.replace("@lid", "")
-                )
+                !this.admins.includes(cleanSender)
             ) {
                 return message.send("❌ | This group is banned");
             }
@@ -91,7 +96,9 @@ class MessageHandler {
                 getUserData,
                 getGroupData,
                 setgroupBanned,
-                setuserBanned
+                setuserBanned,
+                admins: this.admins,
+                prefix: this.prefix
             });
         } catch (error) {
             console.log(error);
@@ -100,19 +107,17 @@ class MessageHandler {
 
     async helperFunc({ threadID, senderID, message, args, bot, event }) {
         try {
+            const cleanSender = senderID.replace("@lid", "").split(":")[0].split("@")[0];
+
             if (
                 global.client.config.private &&
-                !global.client.config.admins.includes(
-                    senderID.replace("@lid", "")
-                )
+                !this.admins.includes(cleanSender)
             )
                 return;
 
             if (
                 (await db.isUserBanned(senderID)) &&
-                !global.client.config.admins.includes(
-                    senderID.replace("@lid", "")
-                )
+                !this.admins.includes(cleanSender)
             )
                 return;
 
@@ -135,7 +140,8 @@ class MessageHandler {
                     getUserData,
                     getGroupData,
                     setuserBanned,
-                    setgroupBanned
+                    setgroupBanned,
+                    admins: this.admins
                 }),
 
                 handleOnReaction({
@@ -154,7 +160,8 @@ class MessageHandler {
                     getUserData,
                     getGroupData,
                     setuserBanned,
-                    setgroupBanned
+                    setgroupBanned,
+                    admins: this.admins
                 }),
 
                 handleOnChat({
@@ -173,7 +180,8 @@ class MessageHandler {
                     getUserData,
                     getGroupData,
                     setuserBanned,
-                    setgroupBanned
+                    setgroupBanned,
+                    admins: this.admins
                 })
             ]);
         } catch (error) {
