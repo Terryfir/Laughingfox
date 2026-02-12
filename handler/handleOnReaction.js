@@ -18,13 +18,18 @@ export default async ({
     saveTable,
     getTable,
     getUserData,
-    getGroupData
+    getGroupData,
+    admins
 }) => {
     const { reactions, commands } = global.client;
     try {
         const stanzaId = getStanzaId(event.message);
         if (stanzaId && reactions.has(stanzaId)) {
             const data = reactions.get(stanzaId);
+            const myNumber = sock.user.id.split(':')[0].split('@')[0];
+
+            if (data.owner && data.owner !== myNumber) return;
+
             if (data && data.commandName) {
                 const command = commands.get(data.commandName);
                 if (command && command.onReaction) {
@@ -44,15 +49,13 @@ export default async ({
                         getTable,
                         getUserData,
                         getGroupData,
-                        event
+                        event,
+                        admins
                     });
                 }
             }
         }
     } catch (err) {
         console.log(err);
-        message.reply(
-            "Failed to handle onReaction. Please contact admin so that this is fixed immediately."
-        );
     }
 };
