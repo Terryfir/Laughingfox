@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 
 const scheduleExit = (action) => {
-    cron.schedule('0 */1 * * *', () => {
+    cron.schedule('0 */3 * * *', () => {
         if (action) {
             action();
         } else {
