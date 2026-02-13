@@ -22,7 +22,7 @@ export default async ({
         const stanzaId = replyMsg?.stanzaId;
 
         if (stanzaId && replies.has(stanzaId)) {
-            const data = replies.get(stanzaId);
+            const data = replies.get(stanzaId) || {};
             const myNumber = sock.user.id.split(':')[0].split('@')[0];
 
             if (data.owner && data.owner !== myNumber) return;
