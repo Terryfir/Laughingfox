@@ -22,6 +22,7 @@ export default async ({
     try {
         for (const command of commands.entries()) {
             if (command && typeof command.onMention === "function") {
+              console.log("handle onmention was called successfully")
                 await command.onMention({
                     sock,
                     event,
@@ -44,6 +45,7 @@ export default async ({
             }
         }
     } catch (err) {
-        console.error("Error in Mention Handler execution:", err);
+        console.log(err);
+        console.log("handle mention was called unsuccessfully")
     }
 };
