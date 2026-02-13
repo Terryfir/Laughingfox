@@ -228,6 +228,7 @@ class MessageHandler {
         try {
             const threadID = event.key.remoteJid;
             const myId = this.sock.user.id.split(":")[0] + "@s.whatsapp.net";
+            const myLid = this.sock.user.lid.split(":")[0] + "@lid";
             const myNumber = this.sock.user.id.split(":")[0];
 
             let senderID =
@@ -249,7 +250,8 @@ class MessageHandler {
 
             const mentions =
                 msg.extendedTextMessage?.contextInfo?.mentionedJid || [];
-            const isMentioned = mentions.includes(myId);
+                console.log(`mentions: ${mentions}`)
+            const isMentioned = mentions.includes(myLid);
 
             const args =
                 msg.conversation ||
