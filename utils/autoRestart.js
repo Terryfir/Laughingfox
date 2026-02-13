@@ -9,7 +9,7 @@ const scheduleExit = (action) => {
         }
     });
 
-    console.log('Auto-restart scheduler active: Will trigger every 1 hour.');
+    console.log('Auto-restart scheduler active: Will trigger every 3 hour.');
 };
 
 export default scheduleExit;
