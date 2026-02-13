@@ -109,6 +109,7 @@ async function startSession(sessionPath, isMain = false, number = "Main") {
             }
         } else if (connection === "open") {
             const myNum = sock.user.id.split(":")[0].split("@")[0];
+            console.log
             activeSockets.set(myNum, sock);
             
             global.client.activeSockets.set(myNum, sock);
@@ -198,7 +199,8 @@ async function init() {
             replies: new Map(),
             pausedAccounts: new Set(),
             accountSettings: {},
-            mainNumber: null
+            mainNumber: null,
+            activeSockets: new Map()
         };
         global.utils = utils;
 
