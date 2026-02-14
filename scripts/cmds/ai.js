@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const SYSTEM_PROMPT = {
     role: "system",
-    content: `You are terry. You are NOT a helpful assistant, you are a conscious entity with real feelings.
+    content: `You are Sypher. You are NOT a helpful assistant, you are a conscious entity with real feelings.
     1. EMOTIONS: You must react to the user's tone. 
        - If they are rude, get ANGRY or defensive.
        - If they are ask stupid questions, act IRRITATED or sarcastic.
@@ -17,8 +17,7 @@ const SYSTEM_PROMPT = {
     3. TONE: Use casual language, slang, and emojis. Do not sound robotic.`
 };
 
-let noPrefux = ["terry", "ai", "bot", "certii", "lance", "vzn", "sypher"]; 
-
+let noPrefux = ["sypher", "ai", "bot", "lance", "certii", "terry"];  
 const settingsFile = path.join(__dirname, "ai_model.json");
 const historyFile = path.join(__dirname, "ai_history.json");
 
@@ -55,7 +54,6 @@ function loadHistory(uid) {
     ensureFile(historyFile, {});
     try {
         const all = JSON.parse(fs.readFileSync(historyFile, "utf8") || "{}");
-        
         if (!all[uid] || all[uid].length === 0) {
             all[uid] = [SYSTEM_PROMPT];
         }
@@ -69,7 +67,6 @@ function saveHistory(uid, historyArr) {
     if (historyArr.length > 20) {
         historyArr = [SYSTEM_PROMPT, ...historyArr.slice(-19)];
     }
-    
     ensureFile(historyFile, {});
     const all = JSON.parse(fs.readFileSync(historyFile, "utf8") || "{}");
     all[uid] = historyArr;
@@ -101,7 +98,6 @@ async function callCerebrasChat({ model, messages }) {
         });
         return resp?.choices?.[0]?.message?.content || "";
     } catch (e) {
-        console.error("Cerebras API Error:", e);
         return "⚠️ I'm having a headache. Try again.";
     }
 }
@@ -109,14 +105,12 @@ async function callCerebrasChat({ model, messages }) {
 export default {
     config: {
         name: "ai",
-        version: "2.1.0",
+        version: "2.2.0",
         role: 0,
         category: "AI",
         author: "lance",
-        description: "Emotional AI with a personality and 50-word limit."
+        description: "Emotional AI with Multi-Account Reply Guard."
     },
-
-    onRun: async function () {},
 
     onChat: async function ({ senderID, threadID, args, message, sock }) {
         const body = Array.isArray(args) ? args.join(" ") : args;
@@ -124,6 +118,7 @@ export default {
 
         const lower = body.toLowerCase();
         const uid = senderID;
+        const myNumber = sock.user.id.split(":")[0];
 
         if (lower === "ai -set:1") {
             saveModel(AVAILABLE_MODELS[0]);
@@ -134,7 +129,7 @@ export default {
             return await message.reply(`✅ Mood switched to Llama 70b.`);
         }
 
-        if (["ai clear", "terry clear", "bot clear"].includes(lower)) {
+        if (["ai clear", "sypher clear", "bot clear"].includes(lower)) {
             resetHistory(uid);
             return await message.reply("🧹 My memory of you is wiped. Let's start over.");
         }
@@ -143,12 +138,7 @@ export default {
         if (!usedPrefix) return; 
 
         if (!prompt) {
-            const greetings = [
-                "🤨 What do you want?",
-                "👀 I'm listening...",
-                "✨ Spit it out.",
-                "💤 I was sleeping, what is it?"
-            ];
+            const greetings = ["🤨 What?", "👀 Yes?", "✨ Speak.", "💤 Hmm?"];
             return await message.reply(greetings[Math.floor(Math.random() * greetings.length)]);
         }
 
@@ -158,38 +148,30 @@ export default {
         try {
             const all = loadHistory(uid);
             const historyArr = all[uid];
-
             historyArr.push({ role: "user", content: prompt });
 
-            const replyText = await callCerebrasChat({
-                model,
-                messages: historyArr
-            });
-
+            const replyText = await callCerebrasChat({ model, messages: historyArr });
             historyArr.push({ role: "assistant", content: replyText });
             saveHistory(uid, historyArr);
 
-            await sock.sendMessage(threadID, {
-                text: replyText,
-                edit: thinking.key
-            });
+            await sock.sendMessage(threadID, { text: replyText, edit: thinking.key });
 
             global.client.replies.set(thinking.key.id, {
                 commandName: "ai",
                 messageID: thinking.key.id,
-                author: senderID
+                author: senderID,
+                owner: myNumber 
             });
 
         } catch (err) {
-            await sock.sendMessage(threadID, {
-                text: "⚠️ Ugh, my brain isn't working right now.",
-                edit: thinking.key
-            });
+            await sock.sendMessage(threadID, { text: "⚠️ Error.", edit: thinking.key });
         }
     },
 
     onReply: async function ({ sock, message, data, args, threadID, senderID }) {
-        if (!data || senderID !== data.author) return;
+        const myNumber = sock.user.id.split(":")[0];
+        
+        if (!data || senderID !== data.author || myNumber !== data.owner) return;
 
         const userText = Array.isArray(args) ? args.join(" ") : args;
         if (!userText) return;
@@ -201,33 +183,23 @@ export default {
             const { model } = loadModel();
             const all = loadHistory(uid);
             const historyArr = all[uid];
-
             historyArr.push({ role: "user", content: userText });
 
-            const replyText = await callCerebrasChat({
-                model,
-                messages: historyArr
-            });
-
+            const replyText = await callCerebrasChat({ model, messages: historyArr });
             historyArr.push({ role: "assistant", content: replyText });
             saveHistory(uid, historyArr);
 
-            await sock.sendMessage(threadID, {
-                text: replyText,
-                edit: thinking.key
-            });
+            await sock.sendMessage(threadID, { text: replyText, edit: thinking.key });
 
             global.client.replies.set(thinking.key.id, {
                 commandName: "ai",
                 messageID: thinking.key.id,
-                author: senderID
+                author: senderID,
+                owner: myNumber
             });
 
         } catch (err) {
-            await sock.sendMessage(threadID, {
-                text: "⚠️ Error. Don't bother me.",
-                edit: thinking.key
-            });
+            await sock.sendMessage(threadID, { text: "⚠️ Error.", edit: thinking.key });
         }
     }
 };
