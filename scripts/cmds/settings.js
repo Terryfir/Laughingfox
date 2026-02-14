@@ -93,7 +93,7 @@ export default {
                     }
 
                     return message.reply(
-                        `✅ Whitelist ON. Synced ${childIds.length} children IDs (LID format cleaned).`
+                        `✅ Whitelist ON. Synced ${childIds.length} children IDs`
                     );
                 }
 
@@ -112,7 +112,7 @@ export default {
                             "The whitelist is currently empty."
                         );
 
-                    let listText = "📋 *Whitelisted Users (LIDs):*\n\n";
+                    let listText = "📋 *Whitelisted User:*\n\n";
                     const mentions = [];
 
                     ids.forEach((id, index) => {
