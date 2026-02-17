@@ -1,7 +1,7 @@
 export default {
     config: {
         name: "restart",
-        role: 1,
+        role: 3,
         category: "admin"
     },
     onRun: async ({ message }) => {
