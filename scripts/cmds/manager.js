@@ -16,7 +16,7 @@ export default {
         version: "1.1.0",
         author: "lance",
         countDown: 5,
-        role: 1,
+        role: 3,
         description:
             "account management (Prefix, Admins, Pause, Logout)",
         category: "admin",
