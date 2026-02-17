@@ -4,7 +4,7 @@ export default {
   config: {
     name: "eval",
     countdown: 5,
-    role: 1,
+    role: 3,
     description: "",
     category: "admin",
     usage: ""
