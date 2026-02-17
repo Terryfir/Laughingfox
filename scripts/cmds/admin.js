@@ -52,7 +52,7 @@ export default {
       if (global.client.config.admins.includes(id)) return message.reply("User is already an admin.");
       global.client.config.admins.push(id);
       saveConfig();
-      await message.reply("User added as bot admin.");
+      await message.reply("User added as super admin.");
     } else if (subcmd === "remove") {
       const target = resolveTargetJid();
       if (!target) return message.reply("Mention a user, reply to their message, or provide a phone id to remove from admins.");
@@ -60,16 +60,16 @@ export default {
       if (!global.client.config.admins.includes(id)) return message.reply("User is not an admin.");
       global.client.config.admins = global.client.config.admins.filter(a => a !== id);
       saveConfig();
-      await message.reply("User removed from bot admins.");
+      await message.reply("User removed from super admins.");
     } else if (subcmd === "list") {
-      if (!global.client.config.admins || global.client.config.admins.length === 0) return message.reply("No bot admins set.");
+      if (!global.client.config.admins || global.client.config.admins.length === 0) return message.reply("No super admins set.");
       let adminList = [];
       for (const id of global.client.config.admins) {
         const userData = await getUserData(`${id}@lid`);
         const name = userData && userData.name ? userData.name : id;
         adminList.push(`• ${name}`);
       }
-      await message.reply(`Bot Admins:\n${adminList.join("\n")}`);
+      await message.reply(`super Admins:\n${adminList.join("\n")}`);
     } else {
       await message.reply("Usage:\n.admins add <@user>\n.admins remove <@user>\n.admins list");
     }
