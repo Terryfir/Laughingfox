@@ -17,7 +17,7 @@ export default {
         usage: "!cmd <install/delete/load/bin/file/unload> <commandname.js> [code]",
         category: "owner",
         cooldown: 5,
-        role: 1,
+        role: 3,
         category: "admin"
     },
     onRun: async ({ event, sock, message, args }) => {
