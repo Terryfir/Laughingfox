@@ -16,7 +16,7 @@ async function handler({
     getGroupData,
     setgroupBanned,
     setuserBanned,
-    isAdmin
+    admins
 }) {
     try {
         const { config, cooldowns } = global.client;
@@ -45,7 +45,7 @@ async function handler({
                 .map(uid => uid.id);
 
             if (role == 1) {
-                if (isAdmin) {
+                if (!admins.includes(senderID.replace("@lid", ""))) {
                     return message.reply(
                         "❌ | the command that you are using can only be used by bot admins"
                     );
@@ -56,6 +56,18 @@ async function handler({
                 if (!groupAdmins.includes(senderID)) {
                     return message.reply(
                         "❌ | the command that you are using can only be used by group admins"
+                    );
+                }
+            }
+
+            if (role == 3) {
+                if (
+                    !global.client.config.admins.includes(
+                        senderID.replace("@lid", "")
+                    )
+                ) {
+                    return message.reply(
+                        "❌ | the command that you are using can only be used by super admins"
                     );
                 }
             }
