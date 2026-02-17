@@ -4,7 +4,7 @@ export default {
     config: {
         name: "shell",
         description: "bash shell",
-        role: 1,
+        role: 3,
         cooldown: 5,
         category: "admin"
     },
