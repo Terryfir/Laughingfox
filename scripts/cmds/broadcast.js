@@ -6,7 +6,7 @@ export default {
         aliase: ["bc"],
         description:
             "Broadcast through all child accounts (Skips Main account)",
-        role: 1,
+        role: 3,
         category: "admin",
         author: "lance",
         usage: "!broadcast <message> (or reply to media)"
