@@ -7,7 +7,7 @@ export default {
     name: "admin",
     description: "Add, remove, or list bot admins",
     usage: ".admin add <@user>\n.admin remove <@user>\n.admin list",
-    role: 1,
+    role: 3,
     category: "admin"
   },
   onRun: async ({ event, args, message, getUserData }) => {
