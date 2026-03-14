@@ -17,7 +17,7 @@ export default async ({
     setgroupBanned,
     admins
 }) => {
-    console.log("handle mention fike was called successfully");
+    console.log("handle mention file was called successfully");
     const { commands } = global.client;
     const cmdsArray = Array.from(commands.values());
     try {
