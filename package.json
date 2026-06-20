@@ -29,6 +29,7 @@
     "axios": "*",
     "fs": "*",
     "node-cache": "*",
-    "sqlite3": "*"
+    "sqlite3": "*",
+    "@vscode/sqlite3": "*"
   }
 }
