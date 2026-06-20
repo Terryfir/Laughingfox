@@ -18,7 +18,7 @@ import messageHandler from "./handler/messagehandler.js";
 import handleEvent from "./handler/handleEvent.js";
 import db from "./utils/data.js";
 import axios from "axios";
-import NodeCache from "node-cache";
+//import NodeCache from "node-cache";
 
 dotenv.config();
 
