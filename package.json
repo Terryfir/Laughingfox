@@ -19,7 +19,6 @@
   "homepage": "https://github.com/lance-ui/Laughingfox#readme",
   "dependencies": {
     "@ryuu-reinzz/baileys": "^5.1.4",
-    "@vscode/sqlite3": "*",
     "@whiskeysockets/baileys": "^7.0.0-rc13",
     "adm-zip": "^0.5.17",
     "axios": "*",
@@ -36,7 +35,7 @@
     "node-cron": "*",
     "pastebin-api": "^7.0.0",
     "pino": "*",
-    "sqlite3": "*",
+    "sqlite3": "^6.0.1",
     "wa-sticker-formatter": "^4.4.4",
     "yt-search": "^2.13.1"
   }

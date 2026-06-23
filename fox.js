@@ -66,7 +66,7 @@ async function startSession(sessionPath, isMain = false, number = "Main", reques
 
   sock.ev.on("creds.update", saveCreds);
 
-  if (requestPairing && !state.creds.registered && global.client.mainNumber !== null) {
+  if (requestPairing && !state.creds.registered) {
     await delay(3000);
     try {
       const pairingNumber = config.botNumber || config.pairingNumber;
