@@ -63,7 +63,7 @@ export default {
 
     let helpMessage = `╭──⦿【 ⚡ ${config.botname.toUpperCase()} 】\n`;
     helpMessage += `│ 🎯 𝗨𝘀𝗲𝗿: ${pushName}\n`;
-    helpMessage += `│ 🌐 𝗣𝗿𝗲𝗳𝗶𝘅: ${prefix}\n`;
+    helpMessage += `│ 🌐 𝗣𝗿𝗲𝗳𝗶𝦅: ${prefix}\n`;
     helpMessage += `│ 📅 𝗗𝗮𝘁𝗲: ${currentDate}\n`;
     helpMessage += `│ 📆 𝗗𝗮𝘆: ${currentDay}\n`;
     helpMessage += `│ ⏰ 𝗧𝗶𝗺𝗲: ${currentTime}\n`;
@@ -102,14 +102,20 @@ export default {
     helpMessage += `╰────────────⦿`;
 
     try {
-      const apiResponse = await fetch("https://api.waifu.pics/sfw/waifu", {
+      // Updated to waifu.im API endpoint
+      const apiResponse = await fetch("https://api.waifu.im/images", {
         timeout: 5000,
       });
       if (!apiResponse.ok)
         throw new Error(`API returned status ${apiResponse.status}`);
 
       const apiData = await apiResponse.json();
-      const imgUrl = apiData.url;
+      
+      // Dig down into items[0] to find the URL property
+      if (!apiData.items || apiData.items.length === 0)
+        throw new Error("No images returned from API");
+        
+      const imgUrl = apiData.items[0].url;
 
       await sock.sendMessage(
         threadID,

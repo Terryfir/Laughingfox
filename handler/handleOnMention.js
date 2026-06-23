@@ -17,13 +17,11 @@ export default async ({
     setgroupBanned,
     admins
 }) => {
-    console.log("handle mention file was called successfully");
     const { commands } = global.client;
     const cmdsArray = Array.from(commands.values());
     try {
         for (const command of commands.entries()) {
             if (command && typeof command.onMention === "function") {
-                console.log("handle onmention was called successfully");
                 await command.onMention({
                     sock,
                     event,

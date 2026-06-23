@@ -249,10 +249,8 @@ class MessageHandler {
             });
 
             const mentions =
-                msg.extendedTextMessage?.contextInfo?.mentionedJid || null;
-                console.log(`mentions: ${mentions}`)
-            const isMentioned = mentions !== null ? mentions == myLid : false;
-            console.log(`ismentioned host: ${isMentioned}`)
+                msg.extendedTextMessage?.contextInfo?.mentionedJid;
+            const isMentioned = mentions !== null ? mentions?.includes(myLid) : false;
 
             const args =
                 msg.conversation ||

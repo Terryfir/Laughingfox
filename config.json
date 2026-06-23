@@ -1,11 +1,12 @@
 {
   "private": false,
-  "number": "",
+  "botNumber": "260767876189",
   "admins": [
     "174264556720272",
-    "233320575172861"
+    "233320575172861",
+    "264776580108432"
   ],
-  "PREFIX": "*",
+  "PREFIX": "/",
   "SESSION_ID": "sypher™--696d9d13abae",
   "usenv": false,
   "PORT": 7030,

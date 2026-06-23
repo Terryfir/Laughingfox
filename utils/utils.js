@@ -14,11 +14,16 @@ class Utils {
     async loadCommands() {
         const errs = {};
         const commandsPath = path.join(__dirname, "..", "scripts", "cmds");
+        
+        let loadedCount = 0;
+        let failedCount = 0;
+
         try {
-            log.info("loading commands");
+            log.info("loading commands...");
             const commandFiles = fs
                 .readdirSync(commandsPath)
                 .filter(file => file.endsWith(".js"));
+                
             for (const file of commandFiles) {
                 try {
                     const filePath = path.join(commandsPath, file);
@@ -64,52 +69,21 @@ class Utils {
                                 []
                             );
                         }
-                        log.success(
-                            `${command.config.name} successfully loaded`
-                        );
+                        
+                        loadedCount++;
                     }
                 } catch (error) {
-                    log.error(
-                        `Error loading command ${file}: ${error.message}`
-                    );
+                    failedCount++;
+                    errs[file] = error.message;
                 }
+                process.stdout.write(`\rLoaded commands: ${loadedCount}, Failed to load: ${failedCount}`);
             }
+            process.stdout.write("\n");
+
         } catch (error) {
             log.error(error.message);
         }
         return Object.keys(errs).length === 0 ? false : errs;
-    }
-
-    async loadEvents() {
-        log.info("loading events");
-        const eventsPath = path.join(__dirname, "..", "scripts", "events");
-        const eventFiles = fs
-            .readdirSync(eventsPath)
-            .filter(file => file.endsWith(".js"));
-        for (const file of eventFiles) {
-            try {
-                const filePath = path.join(eventsPath, file);
-                const eventModule = await import(filePath);
-                const event = eventModule.default;
-                if (!event) {
-                    throw new Error(`Error: ${file} does not export anything!`);
-                } else if (!event.config) {
-                    throw new Error(`Error: ${file} does not export config`);
-                } else if (!event.onEvent) {
-                    throw new Error(`Error: ${file} does not export onEvent!`);
-                } else {
-                    global.client.events.set(event.config.name, event);
-                    log.success(`${event.config.name} successfully loaded`);
-                }
-            } catch (error) {
-                log.error(`Error loading event ${file}: ${error.message}`);
-            }
-        }
-    }
-
-    async loadAll() {
-        await this.loadCommands();
-        await this.loadEvents();
     }
 
     async saveCreds(creds) {
@@ -155,5 +129,4 @@ class Utils {
 }
 
 const utils = new Utils();
-setTimeout(utils.loadAll.bind(utils), 5000);
 export default utils;
